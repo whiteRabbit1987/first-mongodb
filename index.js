@@ -1,5 +1,6 @@
 const { MongoClient } = require("mongodb-legacy");
 const assert = require("assert");
+const dboper = require('./operations');
 
 const url = "mongodb://localhost:27017/";
 const dbName = "nucampsite";
@@ -20,20 +21,33 @@ MongoClient.connect(url, {}, (err, client) => {
 
         const documentToInsert = { name: 'Breadcumb Trail Campground', description: 'Test' };
 
-        collection.insertOne(documentToInsert, (err, result) => {
-            assert.strictEqual(err, undefined);
-
-            console.log("Insert Document:", {
+        dboper.insertDocument(db, documentToInsert, 'campsites', result => {
+            console.log("Insert Document", {
                 _id: result.insertedId,
                 ...documentToInsert,
             });
 
-            collection.find().toArray((err, docs) => {
-                assert.strictEqual(err, undefined);
+            dboper.findDocument(db, 'campsites', docs => {
+                console.log("Found Document", docs);
 
-                console.log("Found Documents:", docs);
 
-                client.close();
+                dboper.updateDocument(db, { name: "Breadcumb Trail Campground" },
+                    { description: "Updated Test Description" }, 'campsites', result => {
+                        console.log('Updated Document Count:', result.modifiedCount);
+
+                        dboper.findDocument(db, 'campsites', docs => {
+                            console.log('Found Documents:', docs);
+
+                            dboper.removeDocument(db, { name: "Breadcrumb Trail Campground" },
+                                'campsites', result => {
+                                    console.log('Deleted Document Count:', result.deletedCount);
+
+                                    client.close();
+                                }
+                            );
+                        });
+                    }
+                );
             });
         });
     });
